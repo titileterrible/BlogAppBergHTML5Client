@@ -6,7 +6,7 @@ and open the template in the editor.
  <html lang="fr">
         <head>
             <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-            <title>Blog Webservices</title>
+            <title>List Users</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta name="description" content="Une démonstration d'un Blog en Webservice, JQuery et Knokcout.js">
             <meta name="author" content="Thierry Bergeron">
@@ -56,28 +56,9 @@ and open the template in the editor.
         <script>
         $(function() { 
               
-
-        
-            // alert('coucou');
-        
-            // liens pour les counts:
-            var urlRoles = "http://localhost:8080/BlogAppBerg2/webresources/role/devcount"; 
-            var urlArticles = "http://localhost:8080/BlogAppBerg2/webresources/article/devcount"; 
-            var urlUsers = "http://localhost:8080/BlogAppBerg2/webresources/bloguser/devcount"; 
-            var urlComments = "http://localhost:8080/BlogAppBerg2/webresources/comment/devcount"; 
-          
-            // Values pour les counts
-            var countRoles = 0;
-            var countArticles = 0;
-            var countUsers = 0;
-            var countComments = 0;
-            
-            // Pour la récupération des ID d'insertion
-            var newID = '0';
-            
+                       
             // >>> Méthode générique en jQuery pour les get Json...
             $.getAjax =function(getData,url,sync){     
-                
                 $.ajax({
                     url: url,
                     type : "GET",
@@ -94,189 +75,126 @@ and open the template in the editor.
                 });  
                 return getData;
             };
-    
+        
+        
+        
+           // Ressources REST
+           var urlCountUsers = "http://localhost:8080/BlogAppBerg2/webresources/bloguser/devcount"; 
+           var urlListRoles = "http://localhost:8080/BlogAppBerg2/webresources/role";
+           var urlListUsers = "http://localhost:8080/BlogAppBerg2/webresources/bloguser";
+           
+            // Récupération de nombres d'Users
+            var countUsers = 0;
+            countUsers = $.getAjax(countUsers,urlCountUsers,false);
             
-            countRoles = $.getAjax(countRoles,urlRoles,false);
-            countArticles = $.getAjax(countArticles,urlArticles,false);
-            countUsers = $.getAjax(countUsers,urlUsers,false);
-            countComments = $.getAjax(countComments,urlComments,false);
-            //countAuteurs = $.getAjax(countAuteurs,urlAuteurs,false);
+
+
+            // Pour la récupération des ID d'insertion
+            var newID = '0';
+          
+           // Liste des Status...
+           // Comme on ne peux pas la récupérer en REST
+           // On la crée ici en dur
+           var ListeStatus = new Array();
+           ListeStatus.push("Enabled");
+           ListeStatus.push("Disabled");
+           var choicesStatus = ListeStatus;
+        
+          // Liste des rôles
+          var ListeRoles = new Array();
+          // Objet categorie - pas besoin d'etre observable
+          var Role = function(role) {
+                        this.id = role.id;
+                        this.name = role.name;
+                        this.description = role.description;
+          }; 
+        
+        
+        
+        
+        
+
+            
+            // Pour mémo
+            /*
+            {
+            "id":3,
+            "sessionUniqueUserID":"",
+            "firstname":"titi",
+            "lastname":"leterrible",
+            "about":"",
+            "photo":"",
+            "username":"titileterrible",
+            "password":"",
+            "email":"",
+            "last_connected":null,
+            "userStatus":"Enabled",
+            "articles":[],
+            "role":{
+                    "id":1,
+                    "name":"Admin",
+                    "description":""
+                    },
+             "admin":true
+             }
             /**/
+
+            // Objet User pour le viewmodel
+            var UserForList = function(user){
+                    this.id = ko.observable(user.id);
+                    //"sessionUniqueUserID":"",
+                    this.firstname = ko.observable(user.firstname);
+                    this.lastname = ko.observable(user.lastname);
+                    this.about = ko.observable(user.about);
+                    // this.photo = ko.observable(user.photo);
+                    this.password = ko.observable(user.password);
+                    this.email = ko.observable(user.email);
+                    this.last_connected = ko.observable(user.last_connected);
+                    // "articles":[],
+                    // Liste des statuts
+                    var choixStatus = user.status;
+                    this.choicesStatus = ko.observableArray(choicesStatus);
+                    if ( !user.id ) {                               
+                        this.status = null;
+                    } else {
+                        if ( choixStatus) {this.status = ko.observable(this.choicesStatus.find2(choixStatus));} 
+                        else {this.status = null;}
+                    }
+                    // dirtyFlag
+                    this.dirtyFlag = new ko.dirtyFlag(this);
+                    
+        
+            };
+            
+            // Objet User pour le Json d'exportation
+            var AutorToExport = function(user){
+                    this.id = user.id;
+                    this.firstname = user.firstname;
+                    this.lastname = user.lastname;
+                    this.about = user.about;
+                    // this.photo = user.photo;
+                    this.password = user.password;
+                    this.email = user.email;
+                    this.status = user.status;
+                    
+                };
+            
+
+            
+            
             
             // On met les variables
             // Ds le viewModel
-            function AccueilViewModel() {
-                this.Roles =  ko.observable(countRoles);
-                this.Articles =  ko.observable(countArticles);
+            function UsersViewModel() {
                 this.Users =  ko.observable(countUsers);
-                this.Comments =  ko.observable(countComments);
+            
+    
+    
             }
 
             // Activation du viewModel
-            ko.applyBindings(new AccueilViewModel()); 
+            ko.applyBindings(new UsersViewModel()); 
                                     
-            $.postAjax =function(data,url,sync){    
-                var jsonToWebservice = ko.toJSON(data,null,2);
-                $.ajax({  
-                    url: url,  
-                    type: "POST", 
-                    async: sync,
-                    contentType: "application/json",  
-                    data: jsonToWebservice,
-                    headers: {  
-                    Accept : "application/json"  
-                }  
-                })
-                         .success(function(data, status, jq) {
-                         newID = data.id;
-                 })  
-                         .error(function(jq, status, error) {  
-                     $(".error").text(JSON.stringify(status + " " + error));
-                     return false;
-                 });
-
-            };                   
-    
-    
-            var Role = function(role) {
-                this.id = '0';
-                //this.name = '';
-                //this.description = '';
-            };   
-
-            var User = function(user) {
-                this.id = '0';
-                this.userStatus = 'Enabled';
-            };   
-
-
-            // Création d'un jeu de données de base...
-            //var success = true;
-
-    
-            $('#dialog_link').click(function () {
-                    
-                    var idAuthor01 = 0;
-                    var idAuthor02 = 0;
-                    //var test = "...";
-                    
-                    //alert ('coucou');
-                    var newRoleAdmin = new Role(newRoleAdmin);
-                    newRoleAdmin.id = '0';
-                    newRoleAdmin.name = "Admin";
-                    newRoleAdmin.description = "Tous les droits";
-                    
-                    var newRoleAuthor = new Role(newRoleAuthor);
-                    newRoleAuthor.id = '0';
-                    newRoleAuthor.name = "Author";
-                    newRoleAuthor.description = "Droits limités";
-                    
-                    
-                    var url = "http://localhost:8080/BlogAppBerg2/webresources/role";
-                    $.postAjax(newRoleAdmin,url,false); newRoleAdmin.id = newID; newID = '0';
-                    $.postAjax(newRoleAuthor,url,false,idAuthor02); newRoleAuthor.id = newID; newID = '0';
-                    
-                    var debugg = "newRoleAdmin = "+newRoleAdmin.id+"\n";
-                    debugg += "newRoleAuthor = "+newRoleAuthor.id+"\n";
-                    // alert (debugg);
-        
-                    var newUserAdmin1 = new User(newUserAdmin1);
-                    newUserAdmin1.firstname = "Titi";
-                    newUserAdmin1.lastname = "Leterrible";
-                    newUserAdmin1.username = "titileterrible";
-                    newUserAdmin1.password = "password";
-                    newUserAdmin1.userStatus = "Enabled";
-                    newUserAdmin1.role = newRoleAdmin;
-        
-                    
-                    var newUserAdmin2 = new User(newUserAdmin2);
-                    newUserAdmin2.firstname = "Claudia";
-                    newUserAdmin2.lastname = 'Appourchaux';
-                    newUserAdmin2.username = 'claudia';
-                    newUserAdmin2.password = 'password';
-                    newUserAdmin2.userStatus = 'Enabled';
-                    newUserAdmin2.role = newRoleAdmin;
-        
-        
-                    var newUserAuthor1 = new User(newUserAuthor1);
-                    newUserAuthor1.firstname = 'Edouard';
-                    newUserAuthor1.lastname = 'Amosse';
-                    newUserAuthor1.username = 'edou';
-                    newUserAuthor1.password = 'password';
-                    newUserAuthor1.userStatus = 'Enabled';
-                    newUserAuthor1.role = newRoleAuthor;
-                    
-                    var newUserAuthor2 = new User(newUserAuthor2);
-                    newUserAuthor2.firstname = 'Michel';
-                    newUserAuthor2.lastname = 'Buffa';
-                    newUserAuthor2.username = 'michelbuffa';
-                    newUserAuthor2.password = 'password';
-                    newUserAuthor2.userStatus = 'Enabled';
-                    newUserAuthor2.role = newRoleAuthor;
-                    /**/
-        
-                    var url = "http://localhost:8080/BlogAppBerg2/webresources/bloguser";
-                    $.postAjax(newUserAdmin1,url,false); newUserAdmin1.id = newID; newID = '0';
-                    $.postAjax(newUserAdmin2,url,false); newUserAdmin2.id = newID; newID = '0';
-                    $.postAjax(newUserAuthor1,url,false); newUserAuthor1.id = newID; newID = '0';
-                    $.postAjax(newUserAuthor2,url,false); newUserAuthor2.id = newID; newID = '0';
-                    
-                    debugg += "newUserAdmin1 = "+newUserAdmin1.id+"\n";
-                    debugg += "newUserAdmin2 = "+newUserAdmin2.id+"\n";
-                    debugg += "newUserAuthor1 = "+newUserAuthor1.id+"\n";
-                    debugg += "newUserAuthor1 = "+newUserAuthor2.id+"\n";
-                    
-                    alert (debugg);
-                    
-                    // Maintenant, on crée des articles...
-                    // Attention, on ne dois pas renvoyer l'User tel quel ( a cause de son password... ),
-                    // [{"id":7,"title":"Article de Titi","keywords":"key01, key02","published_on":null,"content":"blablablz","photo":"","position_longitude":"","position_latitude":"","position_name":"","status":"WaitForValidation","blogUser":{"id":3,"sessionUniqueUserID":null,"firstname":"Titi","lastname":"Leterrible","about":null,"photo":null,"username":"titileterrible","password":"password","email":null,"last_connected":null,"userStatus":"Enabled","articles":[],"role":{"id":1,"name":"Admin","description":"Tous les droits"},"admin":true}}]
-        
-                    /* 
-                    {"id":7,
-                    "title":"Article de Titi",
-                    "keywords":"key01, key02",
-                    "published_on":null,
-                    "content":"blablablz",
-                    "photo":"",
-                    "position_longitude":"",
-                    "position_latitude":"",
-                    "position_name":"",
-                    "status":"WaitForValidation",
-                    "blogUser":{
-                                "id":3,
-                                "sessionUniqueUserID":null,
-                                "firstname":"Titi",
-                                "lastname":"Leterrible",
-                                "about":null,
-                                "photo":null,
-                                "username":"titileterrible",
-                                "password":"password",
-                                "email":null,
-                                "last_connected":null,
-                                "userStatus":"Enabled",
-                                "articles":[],
-                                "role":
-                                    {
-                                    "id":1,
-                                    "name":"Admin",
-                                    "description":"Tous les droits"
-                                    },
-                                "admin":true
-                     }
-                                }]
-                    /**/
-
-                    // On rafraichit la page...
-                    window.location.reload(true);
-                    //$('#dialog_simple').dialog('open');
-                    
-            
-    });
-
-
-
-
         }); 
         </script>
         
@@ -305,11 +223,11 @@ and open the template in the editor.
                     <div class="nav-collapse collapse">
                         <ul class="nav">
                             
-                            <li class="active">
+                            <li>
                                 <a href="./index.html">Accueil</a>
                             </li>
                             
-                            <li>
+                            <li class="active">
                                 <a href="./list_users.html">Users</a>
                             </li>
                             
@@ -354,6 +272,8 @@ and open the template in the editor.
        <div class="container">
         
         <div class="row">
+        
+        <!--    
         <div class="span3 bs-docs-sidebar">
             <ul class="nav nav-list bs-docs-sidenav">
                 <li><a href="#welcome"><i class="icon-chevron-right"></i> Bienvenue</a></li>
@@ -361,25 +281,18 @@ and open the template in the editor.
                 <li><a href="#connexion"><i class="icon-chevron-right"></i> Connexion</a></li>
             </ul>
         </div>
+        -->
         
             
-       <div class="span9">
+       
             
             <section id="welcome">
                 
                 <header> 
                     <div class="page-header">
-                        <h1>Bienvenue sur le Blog de Claudia et Thierry</h1>
+                        <h1>Liste des Utilisateurs enregistrés</h1>
                     </div>
-                </header>
-                
-                <div class="row-fluid">
-                    <p class="docs-lead" >
-                        Vous pouvez publier un article et déposer un commentaire si vous êtes préalablement inscrit et enregistré sur le blog...<br/>
-                        Pour les inscriptions, <a href="#connexion">c'est par ici...</a>  
-                    </p>
-                </div>
-            
+                </header>       
                
                    <section>
 
@@ -436,7 +349,7 @@ and open the template in the editor.
        
        
        
-       </div>
+       
      </div>
 </div>
 
